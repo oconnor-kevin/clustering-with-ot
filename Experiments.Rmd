@@ -1,0 +1,49 @@
+---
+title: "Clustering Distributions with Optimal Transport \\ Experiments"
+author: "Kevin O'Connor"
+date: "3/26/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Libraries
+library(tidyverse)
+library(transport)
+
+# Directories
+savedir <- "/Users/kevinoconnor/Documents/School/STOR_767/Project/clustering-with-ot"
+
+# Switches
+save_new_plots <- TRUE
+show_new_plots <- TRUE
+
+set.seed(315)
+```
+
+# Introduction
+
+This document includes the code for running experiments in "Clustering Distributions with Optimal Transport" by Kevin O'Connor.
+
+# Clustering Gaussians
+
+In this section we experiment on a simulated dataset with 100 points simulated from each of 10 different 2-dimensional Gaussian distributions.
+
+```{r 1_1}
+# Generate set of gaussian distributions
+n <- 10  # Number of distributions
+m <- 100  # Number of points in each distribution
+mu.mat <- matrix(runif(n * 2, min = -10, max = 10), nrow = 2, ncol = n)
+dat <- data.frame("class" = rep(1:n, each = m)) %>%
+  mutate("dim1" = rnorm(m * n, mu.mat[1, rep(1:n, each = m)])) %>%
+  mutate("dim2" = rnorm(m * n, mu.mat[2, rep(1:n, each = m)]))
+# Plot data
+norm_lab_plot <- ggplot(dat, aes(x=dim1, y=dim2, color=as.factor(dat$class))) + 
+  geom_point(show.legend = FALSE)
+if(save_new_plots){
+  ggsave(file.path(savedir, "LabeledNormalPlot.png"), norm_lab_plot)
+}
+if(show_new_plots){norm_lab_plot}
+```
+
+

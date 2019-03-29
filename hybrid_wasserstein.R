@@ -1,6 +1,7 @@
 # TITLE: hybrid_wasserstein.R
 # AUTHOR: Kevin O'Connor
 # DATE CREATED: 3/28/19
+# DATE MODIFIED: 3/29/19
 
 wasserstein_normal <- function(x, y){
   # Computes the wasserstein-2^2 distance between z_x and z_y where z_x is the 
@@ -57,20 +58,45 @@ get_reference_measure <- function(dist_df){
 }
 
 
-get_tangent_approx <- function(dist_df){
+get_tangent_approx_mat <- function(dist_df){
   # Computes tangent approximation of wasserstein distance.
   
+  require(clue)
+  
+  # Get reference measure and sample from it.
   m <- group_by(dist_df, class) %>% summarize(count = n()) %>% 
     dplyr::select(count) %>% as.vector() %>% min()
   R <- get_reference_measure(dist_df)
+  R_samp <- rkde(m, R) %>% t()  # p x m
   
   # Get transport maps.
+  T_list <- list()
+  T_Us_list <- list()
   for(c in unique(dist_df$class)){
     dist <- filter(dist_df, class == c) %>% dplyr::select(-class) %>% 
       as.matrix() %>% t()  # p x n
-    
+    dist <- dist[, sample.int(ncol(dist), m)]  # p x m
+    # Solve for distance matrix.
+    l2_dist_R_samp <- function(x, y){
+      (dist[, x] - R_samp[, y])^2 %>% sum()
+    }
+    l2_dist_R_samp <- Vectorize(l2_dist_R_samp)
+    distances <- outer(1:m, 1:m, FUN = l2_dist)
+    # Solve for optimal transport map.
+    T_list[[c]] <- solve_LSAP(distances)
+    # Compute T(U_s) for s = 1, ..., m.
+    ## Compute 1 nearest neighbors of U_s to distribution.
+    U_s_nn <- apply(R_samp, 2, function(r){
+      apply(dist, 2, function(d){sum((r - d)^2)}) %>% which.min()
+    })
+    ## Get T(U_s) via 1 nearest neighbors.
+    T_Us_list[[c]] <- R_samp[, T_list[[c]][U_s_nn]]
   }
-  rkde(m, R)
+  
+  # Compute distances between T_j(U_s) and T_k(U_s).
+  l2_dist_Tj_Tk <- function(x, y){sum((x - y)^2)}
+  l2_dist_Tj_Tk <- Vectorize(l2_dist_Tj_Tk)
+  outer(T_Us_list, T_Us_list, FUN = l2_dist_Tj_Tk)
 }
 
 

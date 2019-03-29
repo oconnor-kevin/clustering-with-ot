@@ -39,7 +39,8 @@ dat <- data.frame("class" = rep(1:n, each = m)) %>%
   mutate("dim2" = rnorm(m * n, mu.mat[2, rep(1:n, each = m)]))
 # Plot data
 norm_lab_plot <- ggplot(dat, aes(x=dim1, y=dim2, color=as.factor(dat$class))) + 
-  geom_point(show.legend = FALSE)
+  geom_point(show.legend = FALSE) + 
+  geom_circle(position=)
 if(save_new_plots){
   ggsave(file.path(savedir, "LabeledNormalPlot.png"), norm_lab_plot)
 }

@@ -3,6 +3,12 @@
 # DATE CREATED: 3/28/19
 # DATE MODIFIED: 3/29/19
 
+wasserstein_normal_mu_sigma <- function(mu_x, sigma_x, mu_y, sigma_y){
+  return(t(mu_x - mu_y) %*% (mu_x - mu_y) + tr(sigma_x) + tr(sigma_y)
+         - 2 * tr(sqrtm(sqrtm(sigma_x)$B %*% sigma_y %*% sqrtm(sigma_x)$B)$B))
+}
+
+
 wasserstein_normal_x_y <- function(x, y){
   # Computes the wasserstein-2^2 distance between z_x and z_y where z_x is the 
   #  Gaussian distribution with mean(z_x) = mean(x) and cov(z_x) = cov(x).
@@ -21,8 +27,7 @@ wasserstein_normal_x_y <- function(x, y){
   sigma_x <- cov(t(x))
   sigma_y <- cov(t(y))
   
-  return(t(mu_x - mu_y) %*% (mu_x - mu_y) + tr(sigma_x) + tr(sigma_y)
-         - 2 * tr(sqrtm(sqrtm(sigma_x)$B %*% sigma_y %*% sqrtm(sigma_x)$B)$B))
+  return(wasserstein_normal_mu_sigma(mu_x, sigma_x, mu_y, sigma_y))
 }
 
 
@@ -111,7 +116,8 @@ get_tangent_approx_mat <- function(dist_df, m = "None"){
   # Get transport maps.
   T_list <- list()
   T_Us_list <- list()
-  for(c in unique(dist_df$class)){
+  for(i in 1:length(unique(dist_df$class))){
+    c <- unique(dist_df$class)[i]
     dist <- filter(dist_df, class == c) %>% dplyr::select(-class) %>% 
       as.matrix() %>% t()  # p x n
     dist <- dist[, sample.int(ncol(dist), m)]  # p x m
@@ -120,16 +126,16 @@ get_tangent_approx_mat <- function(dist_df, m = "None"){
       (dist[, x] - R_samp[, y])^2 %>% sum()
     }
     l2_dist_R_samp <- Vectorize(l2_dist_R_samp)
-    distances <- outer(1:m, 1:m, FUN = l2_dist)
+    distances <- outer(1:m, 1:m, FUN = l2_dist_R_samp)
     # Solve for optimal transport map.
-    T_list[[c]] <- solve_LSAP(distances)
+    T_list[[i]] <- solve_LSAP(distances)
     # Compute T(U_s) for s = 1, ..., m.
     ## Compute 1 nearest neighbors of U_s to distribution.
     U_s_nn <- apply(R_samp, 2, function(r){
       apply(dist, 2, function(d){sum((r - d)^2)}) %>% which.min()
     })
     ## Get T(U_s) via 1 nearest neighbors.
-    T_Us_list[[c]] <- R_samp[, T_list[[c]][U_s_nn]]
+    T_Us_list[[i]] <- R_samp[, T_list[[i]][U_s_nn]]
   }
   
   # Compute distances between T_j(U_s) and T_k(U_s).
@@ -151,6 +157,7 @@ hybrid_wasserstein <- function(dist_df){
 
 get_psis <- function(dist_df, R, R_samp){
   require(ks)
+  require(clue)
   
   # Get transport maps.
   T_list <- list()
@@ -164,7 +171,7 @@ get_psis <- function(dist_df, R, R_samp){
       (dist[, x] - R_samp[, y])^2 %>% sum()
     }
     l2_dist_R_samp <- Vectorize(l2_dist_R_samp)
-    distances <- outer(1:m, 1:m, FUN = l2_dist)
+    distances <- outer(1:m, 1:m, FUN = l2_dist_R_samp)
     # Solve for optimal transport map.
     T_list[[c]] <- solve_LSAP(distances)
   }
@@ -190,8 +197,15 @@ get_hybrid_barycenter <- function(dist_df, m = "None", n_iter = 10){
   require(MASS)
   require(ks)
   require(pracma)
+  
+  ## Get lambdas.
+  ns <- group_by(dist_df, class) %>% summarize(count = n()) %>% 
+    pull(count)
+  lambdas <- ns / sum(ns)
+  
   # Get mu_bar.
-  mu_bar <- dplyr::select(dist_df, -class) %>% colMeans()
+  mus <- group_by(dist_df, class) %>% summarise(mu1 = mean(dim1), mu2 = mean(dim2)) %>% dplyr::select(mu1, mu2)
+  mu_bar <- c(mus$mu1 %*% lambdas, mus$mu2 %*% lambdas)
   
   # Get psi_bar.
   ## Get reference measure and sample from it.
@@ -201,10 +215,7 @@ get_hybrid_barycenter <- function(dist_df, m = "None", n_iter = 10){
   }
   R <- get_reference_measure(dist_df)
   R_samp <- rkde(m, R) %>% t()  # p x m
-  ## Get lambdas.
-  ns <- group_by(dist_df, class) %>% summarize(count = n()) %>% 
-    pull(count)
-  lambdas <- ns / sum(ns)
+  ## Compute psi_bar.
   psi_bar <- function(z){
     psis_list <- get_psis(dist_df, R, R_samp)
     lam_psi_list <- lapply(1:length(psis_list), function(i){
@@ -233,7 +244,24 @@ get_hybrid_barycenter <- function(dist_df, m = "None", n_iter = 10){
 }
 
 
-get_phi <- function(){}
+get_inv_tmap <- function(dist_df, mu_bar, sigma_bar, psi_bar, m = "None"){
+  
+  # Get reference measure and sample from it.
+  if(m == "None"){
+    m <- group_by(dist_df, class) %>% summarize(count = n()) %>% 
+      dplyr::select(count) %>% as.vector() %>% min()
+  }
+  R <- get_reference_measure(dist_df)
+  R_samp <- rkde(m, R) %>% t()  # p x m
+  
+  T_bar <- function(z){
+    psi_bar(z) / dkde(z, R) + z
+  }
+  
+  return(T_bar)
+  
+  
+}
 
 
-hybrid_wasserstein <- function(phi1, phi2){}
+#hybrid_wasserstein <- function(phi1, phi2){}

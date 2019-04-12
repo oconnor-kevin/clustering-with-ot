@@ -11,8 +11,11 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(transport)
 
+
 # Directories
-savedir <- "/Users/kevinoconnor/Documents/School/STOR_767/Project/clustering-with-ot"
+homedir <- "/Users/kevinoconnor/Documents/School/STOR_767/Project"
+savedir <- file.path(homedir, "clustering-with-ot")
+datadir <- file.path(homedir, "Data")
 
 # Switches
 save_new_plots <- TRUE
@@ -39,12 +42,54 @@ dat <- data.frame("class" = rep(1:n, each = m)) %>%
   mutate("dim2" = rnorm(m * n, mu.mat[2, rep(1:n, each = m)]))
 # Plot data
 norm_lab_plot <- ggplot(dat, aes(x=dim1, y=dim2, color=as.factor(dat$class))) + 
-  geom_point(show.legend = FALSE) + 
-  geom_circle(position=)
+  geom_point() + 
+  scale_color_discrete("Class") + 
+  ggtitle("Synthetic Distributions")
+norm_lab_plot
 if(save_new_plots){
-  ggsave(file.path(savedir, "LabeledNormalPlot.png"), norm_lab_plot)
+  ggsave(file.path(savedir, "LabeledNormalPlot.png"), norm_lab_plot, width=5, heigh=3)
 }
 if(show_new_plots){norm_lab_plot}
+
+# MDS with H distance.
+dist_mat <- hybrid_wasserstein(dat)
+fit <- cmdscale(dist_mat, eig=TRUE, k=2) # k is the number of dim
+mds_gaussian <- ggplot(data.frame(class=1:n, dim1=-fit$points[,1], dim2=-fit$points[,2]), aes(x=dim1, y=dim2, color=as.factor(class))) +
+  geom_point() + 
+  geom_text(aes(label=class), hjust=1.5, vjust=1.5, show.legend=FALSE) + 
+  scale_color_discrete("Class") + 
+  ggtitle("Multidimensional Scaling with H-distance")
+if(save_new_plots){
+  ggsave(file.path(savedir, "MDSNormalPlot.png"), mds_gaussian, width=5, height=3)
+}
+if(show_new_plots){mds_gaussian}
 ```
 
 
+
+```{r nba_playoffs}
+nba_dat <- read.csv(file.path(datadir, "playoff_shots.csv"), header=TRUE)
+too_few_shots_players <- nba_dat %>% group_by(PLAYER_NAME) %>% summarize(count = n()) %>% filter(count <= 150) %>% dplyr::select(PLAYER_NAME) %>% pull()
+nba_dat <- nba_dat %>% dplyr::select(PLAYER_NAME, LOC_X, LOC_Y, SHOT_MADE_FLAG) %>%
+  filter(SHOT_MADE_FLAG == TRUE) %>% dplyr::select(-SHOT_MADE_FLAG) %>% 
+  mutate(dim1 = as.numeric(LOC_X), dim2 = as.numeric(LOC_Y))
+nba_dat <- nba_dat[-which(nba_dat$PLAYER_NAME %in% too_few_shots_players), ]
+nba_dat <- nba_dat %>% mutate(class = as.numeric(factor(PLAYER_NAME)))
+player_dict <- nba_dat %>% dplyr::select(PLAYER_NAME, class)
+player_dict <- player_dict[-which(duplicated(player_dict)), ]
+player_dict <- player_dict[order(player_dict$class), ]
+nba_dat <- nba_dat %>% dplyr::select(class, dim1, dim2)
+nba_dist_mat <- hybrid_wasserstein(nba_dat)
+
+fit <- cmdscale(nba_dist_mat, eig=TRUE, k=2) # k is the number of dim
+nba_plot <- ggplot(data.frame(name=player_dict$PLAYER_NAME, dim1=fit$points[,1], dim2=fit$points[,2]), aes(x=dim1, y=dim2, color=name)) + 
+  geom_point(show.legend=FALSE) + 
+  geom_text(aes(label=name), hjust=1, vjust=1, show.legend=FALSE) + 
+  ggtitle("Multidimensional Scaling of NBA Player Shot Distributions under H-distance") + 
+  xlim(-14000, 10000)
+if(save_new_plots){
+  ggsave(file.path(savedir, "NBAMDSPlot.png"), nba_plot, width=7, height=5)
+}
+if(show_new_plots){nba_plot}
+
+```

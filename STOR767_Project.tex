@@ -280,15 +280,15 @@
 \maketitle
 
 \begin{abstract}
-In this document, we give a brief introduction to optimal transport and Wasserstein distances. Then we review a recent application of optimal transport to the clustering of distributions. We conclude with two experiments and a discussion of directions for future research.
+In this document, we give a brief introduction to optimal transport and Wasserstein distances. Then we review a recent application of optimal transport to the clustering of distributions. We conclude with two experiments and a discussion of possible directions for future research.
 \end{abstract}
 
 \section{Introduction}
-The optimal transport problem has been well-studied by the mathematical community. It was originally posed by Monge in the form,
+The optimal transport problem has been well-studied by the mathematical community. For two measure spaces $(\mathcal{X}, \mu)$ and $(\mathcal{Y}, \nu)$ with cost function $c: \mathcal{X} \times \mathcal{Y} \rightarrow \mathbb{R}$, it was originally posed by Monge in the form,
 \begin{equation}\label{eq:ot_map}
 \inf_T \int c(x, T(x)) d\mu(x)
 \end{equation}
-where the infimum is taken over $\mu$-measurable $T: \mathcal{X} \rightarrow \mathcal{Y}$ and $c: \mathcal{X}\times \mathcal{Y} \rightarrow \mathbb{R}$ is a cost function. Any map $T$ that achieves the infimum quantity above is referred to as an \textit{optimal transport map}. Initial motivations for this problem were for finding the cheapest way to transport dirt from several locations to some set of destinations. When $c$ is chosen to be some metric, $d$, we can interpret the optimal transport map as minimizing the expected distance over which mass must be transported.
+where the infimum is taken over $\mu$-measurable $T: \mathcal{X} \rightarrow \mathcal{Y}$ with $\mu \circ T^{-1} = \nu$. Any map $T$ that achieves the infimum quantity above is referred to as an \textit{optimal transport map}. Initial motivations for this problem were for finding the cheapest way to transport dirt from several locations to some set of destinations. When $c$ is chosen to be a metric, we can interpret the optimal transport map as minimizing the expected distance over which mass must be transported.
 
 Equation \eqref{eq:ot_map} is useful because it admits a clear interpretation. However, it does not always exist. Intuitively, this is because our plan can only send mass at a point $x \in \mathcal{X}$ to a single other point $T(x) \in \mathcal{Y}$. If one were to try to transport a point mass on $x \in \mathcal{X}$ to a continuous distribution like $\mbox{Unif}[0,1]$, we would find that no such $T$ exists. Kantorovich circumvented this issue by modifying the problem to allow mass to be split and sent to multiple locations. This is achieved via \textit{couplings}:
 
@@ -296,18 +296,16 @@ Equation \eqref{eq:ot_map} is useful because it admits a clear interpretation. H
 A \textbf{coupling} of two measure spaces $(\mathcal{X}, \mu)$ and $(\mathcal{Y}, \nu)$ is a joint measure $\pi$ on $\mathcal{X} \times \mathcal{Y}$ such that $\pi(\mathcal{X} \times B) = \nu(B), \, \forall B \in \mathcal{B}(\mathcal{Y})$ and $\pi(A \times \mathcal{Y}) = \mu(A), \,\forall A \in \mathcal{B}(\mathcal{X})$. The set of couplings of $(\mathcal{X}, \mu)$ and $(\mathcal{Y}, \nu)$ will be denoted $\Pi(\mu, \nu)$.
 \end{defn}
 
-For those unfamiliar with measure theory, a coupling can be equivalently characterized as a random variable $Z \in \mathcal{X} \times \mathcal{Y}$ whose $\mathcal{X}$-marginal is $\mu$-distributed and $\mathcal{Y}$-marginal is $\nu$-distributed.
-
-Now notice that a coupling defines a kind of transport plan that allows for mass to be split. For a coupling $\pi \in \Pi(\mu, \nu)$, $\pi(A, B)$ tells us how much of the mass at $A\in \mathcal{B}(\mathcal{X})$ should be send to $B \in \mathcal{B}(\mathcal{Y})$. Kantorovich used this notion to define the modified optimal transport problem:
+For those unfamiliar with measure theory, a coupling can be equivalently characterized as a random variable $Z \in \mathcal{X} \times \mathcal{Y}$ whose $\mathcal{X}$-marginal is $\mu$-distributed and $\mathcal{Y}$-marginal is $\nu$-distributed. Now notice that a coupling defines a kind of transport plan that allows for mass to be split. For a coupling $\pi \in \Pi(\mu, \nu)$, $\pi(A, B)$ tells us how much of the mass at $A\in \mathcal{B}(\mathcal{X})$ should be send to $B \in \mathcal{B}(\mathcal{Y})$. One can use this notion to define the modified optimal transport problem:
 
 \begin{equation}\label{eq:ot_plan}
 \inf\limits_{\pi \in \Pi(\mu, \nu)} \int c(x, y) d\pi(x, y) 
 \end{equation}
 
-It is clear that a coupling always exists since the independent coupling, $\pi := \mu \otimes \nu$, always exists. Furthermore, for well-behaved cost functions, a minimizer of Equation \eqref{eq:ot_plan} always exists. This allows us to find transport plans between discrete and continuous distributions.
+It is clear that a coupling always exists since the independent coupling, $\pi := \mu \otimes \nu$, always exists. Furthermore, for well-behaved cost functions, a minimizer of Equation \eqref{eq:ot_plan} always exists. This allows us to find transport plans between most well-behaved distributions, even when one is discrete and the other is continuous.
 
 \subsection{Metric on the Space of Distributions}
-One can use the optimal transport distance in Equation \eqref{eq:ot_plan} to define a distance between probability distributions.
+One can use the optimal transport problem in Equation \eqref{eq:ot_plan} to define a distance between probability distributions.
 
 \begin{defn}
 We define the Wasserstein-2 distance between distributions $P \in \mathcal{P}(\mathcal{X})$ and $Q \in \mathcal{P}(\mathcal{X})$ as
@@ -323,7 +321,7 @@ We note that $W_2^2(P, Q)$ is not truly a metric on the space $\mathcal{P}(\math
 \end{rem}
 
 \subsection{Closed Forms}
-At this point, we discuss two cases where a closed form is available for the Wasserstein distance.
+At this point, we discuss two cases where a closed form is available for the $W_2$-distance.
 
 \begin{prop}
 If $P \sim \mathcal{N}_d(\mu_P, \Sigma_P)$ and $Q \sim \mathcal{N}_d(\mu_Q, \Sigma_Q)$, i.e. $P$ and $Q$ are multivariate Gaussian measures, then
@@ -332,25 +330,14 @@ W_2^2(P, Q) = \|\mu_P - \mu_Q\|^2 + \mbox{tr}(\Sigma_P) + \mbox{tr}(\Sigma_Q) - 
 \end{equation}
 \end{prop}
 
-The Gaussian case gives us some intuition for what the Wasserstein distance is measuring. It incorporates not only the location, $\mu$, of the distribution but also the scale, $\Sigma$. 
-
-\begin{rem}
-Note that we define the \textit{Bures distance},
-\begin{equation}
-B^2(\Sigma_P, \Sigma_Q) = \mbox{tr}(\Sigma_P) + \mbox{tr}(\Sigma_Q) - 2\mbox{tr}((\Sigma_P^{1/2} \Sigma_Q \Sigma_P^{1/2})^{1/2})
-\end{equation}
-Thus for brevity, we will write Equation \eqref{eq:gaussian_wass} as
-\begin{equation}
-W_2^2(P, Q) = \|\mu_P - \mu_Q\|^2 + B^2(\Sigma_P, \Sigma_Q)
-\end{equation}
-\end{rem}
+The Gaussian case gives us some intuition for what the Wasserstein distance is measuring. It incorporates not only the location, $\mu$, of the distribution but also the scale, $\Sigma$. When $\Sigma_P = \Sigma_Q$, it reduces to the Euclidean distance between $\mu_P$ and $\mu_Q$. When the means are equal and $\Sigma_P = \alpha \Sigma_Q$ for some $\alpha > 0$, it becomes $(\alpha^{1/2} - 1)^2 \mbox{tr}(\Sigma_Q)$.
 
 Next we consider the case of the expected cost of the optimal transport map (Equation \eqref{eq:ot_map}) between two empirical measures.
 
 \begin{prop}\label{prop:ot_map_empirical}
 If $P = 1/n \sum_{i=1}^n \delta_{x_i}$ and $Q = 1/n \sum_{i=1}^n \delta_{y_i}$, then the expected cost associated with the optimal transport map is given by $x_i \mapsto y_{\gamma(i)}$ where
 \begin{equation}\label{eq:ot_map_empirical}
-\gamma = \argmin\limits_{\gamma \in S(n)} \sum\limits_{i=1}^n c(x_i, y_{\gamma(i)})
+\gamma \in \argmin\limits_{\gamma \in S(n)} \sum\limits_{i=1}^n c(x_i, y_{\gamma(i)})
 \end{equation}
 where the minimum is taken over permutations, $\gamma$, in the set of permutations of $[n]$, $S(n)$.
 \end{prop}
@@ -360,7 +347,7 @@ Again, this closed form gives us some intuition for the OT distance. In the case
 \subsection{Computational Optimal Transport}
 Here we briefly discuss how the optimal transport distance is computed in practice. In Prop. \ref{prop:ot_map_empirical}, we saw how the optimal transport map could be computed for two empirical distributions. \cite{verdinelli2018hybrid} suggest using the Hungarian algorithm for finding the optimal permutation which runs in $\mathcal{O}(n^3)$ time. In other settings, it is typically much more difficult to find an optimal transport map.
 
-For discrete measures, the optimal transport plan can found as a linear program. Indeed if $P = \sum_{i=1}^n \alpha_i\delta_{x_i}$ and $Q = \sum_{j=1}^m \beta_i \delta_{y_j}$, then any coupling $\pi \in \Pi(P, Q)$ has the form
+For discrete measures, finding the optimal transport plan can be written as a linear program. Indeed if $P = \sum_{i=1}^n \alpha_i\delta_{x_i}$ and $Q = \sum_{j=1}^m \beta_i \delta_{y_j}$, then any coupling $\pi \in \Pi(P, Q)$ has the form
 \begin{equation}\label{eq:coupling_of_discrete}
 \pi = \sum\limits_{i=1}^n \sum\limits_{j=1}^m \gamma_{ij} \delta_{(x_i, y_j)}, \quad\quad\mbox{s.t.} \quad \sum\limits_{i=1}^n \gamma_{ij} = \beta_j, \quad \sum\limits_{j=1}^m \gamma_{ij} = \alpha_i, \quad \gamma_{ij} \geq 0, \, \forall i, j
 \end{equation}
@@ -371,22 +358,14 @@ which yields an expected cost of
 Then minimization of the expected cost with the marginal constraints in Equation \eqref{eq:coupling_of_discrete} amounts to minimization of a linear objective subject to linear constraints. Thus, it can be solved using standard linear programming algorithms like the simplex method.
 
 \subsection{Organization of the Paper}
-The remainder of the paper will be organized as follows. Section \ref{sec:hybrid_wasserstein_distance} will review a method proposed by \cite{verdinelli2018hybrid} which defines a hybrid wasserstein distance that allows for efficient computation and straightforward application of commonly used clustering algorithms to the clustering of distributions. Section \ref{sec:experiments} provides two computational experiments to illustrate how the hybrid wasserstein distance can be used to compare distributions. Finally, we provide some further discussion and avenues for future research in Section \ref{sec:discussion}.
+The remainder of the paper will be organized as follows. Section \ref{sec:hybrid_wasserstein_distance} will review a method proposed by \cite{verdinelli2018hybrid} which defines a hybrid wasserstein distance that allows for efficient computation and straightforward application of commonly used clustering algorithms to the clustering of distributions. Section \ref{sec:experiments} details two computational experiments to illustrate how the hybrid wasserstein distance can be used to compare distributions. Finally, we provide some further discussion and avenues for future research in Section \ref{sec:discussion}.
 
 \section{Hybrid Wasserstein Distance}\label{sec:hybrid_wasserstein_distance}
 Recent work by Verdinelli and Wasserman \cite{verdinelli2018hybrid} studies a hybrid Wasserstein distance to obviate the computational burden of computing Wasserstein distances in distributional clustering. Specifically, they propose
 \begin{equation}
 H(P, Q) := H(X, Y) = W_2^2(Z_X, Z_Y) + W_{\dagger}^2(\tilde{X}, \tilde{Y})
 \end{equation}
-where $Z_X \sim \mathcal{N}(\mathbb{E}X, \mbox{Cov}(X))$, $Z_Y \sim\mathcal{N}(\mathbb{E}Y, \mbox{Cov}(Y))$, $\tilde{X} = \mbox{Cov}(X)^{-1/2}(X - \mathbb{E}X)$ and $\tilde{Y} = \mbox{Cov}(Y)^{-1/2}(Y - \mathbb{E}Y)$ with $W_\dagger^2$ some other distance which is easier to compute. Note that the first term is a Wasserstein distance between Gaussian measures and thus has the closed form expression,
-\begin{equation}
-W_2^2(Z_X, Z_Y) = \|\mu_X - \mu_Y\|^2 +B^2(\Sigma_X, \Sigma_Y)
-\end{equation}
-where
-\begin{equation}
- B^2(\Sigma_X, \Sigma_Y) := \mbox{tr}(\Sigma_X) + \mbox{tr}(\Sigma_Y) - 2\mbox{tr}((\Sigma_X^{1/2} \Sigma_Y \Sigma_X^{1/2})^{1/2})
-\end{equation}
-$B^2(\Sigma_X, \Sigma_Y)$ is referred to as the \textit{Bures distance}. 
+where $Z_X \sim \mathcal{N}(\mathbb{E}X, \mbox{Cov}(X))$, $Z_Y \sim\mathcal{N}(\mathbb{E}Y, \mbox{Cov}(Y))$, $\tilde{X} = \mbox{Cov}(X)^{-1/2}(X - \mathbb{E}X)$ and $\tilde{Y} = \mbox{Cov}(Y)^{-1/2}(Y - \mathbb{E}Y)$ with $W_\dagger^2$ some other distance which is easier to compute. Note that the first term is a Wasserstein distance between Gaussian measures and thus has the closed form expression given in Equation \eqref{eq:gaussian_wass}.
 
 The authors leave the choice of $W_\dagger^2$ somewhat flexible but focus on a specific choice which we will discuss now.
 
@@ -395,15 +374,7 @@ The idea behind $W_\dagger^2(\tilde{X}, \tilde{Y})$ comes from \cite{wang2013lin
 \begin{equation}
 W_\dagger^2(\tilde{P}_X, \tilde{P}_Y) := \int (\psi_X(z) - \psi_Y(z))^2 dz = \int (T_X(z) - T_Y(z))^2 dR(z)
 \end{equation}
-For real data, we have only estimates of the true underlying distributions $P_X$ and $P_Y$, so $T_X$ and $T_Y$ cannot be directly computed. Furthermore, a reference measure $R$ must still be chosen. The authors choose $R = R_n \star K_h$, i.e. the kernel density estimate with bandwidth $h$ and discrete weights,
-\begin{equation}
-R_n := \frac{1}{n} \sum\limits_{i=1}^m n_i \tilde{P}_i 
-\end{equation}
-Then the authors use the finite sample approximation,
-\begin{equation}
- \int (\psi_X(z) - \psi_Y(z))^2 dz = \frac{1}{m} \sum\limits_{i=1}^m (T_X(U_i) - T_Y(U_i))^2 + \mathcal{O}_p(m^{-1/2}) 
-\end{equation}
-where $U_1, ..., U_m \sim R$. This suggests the finite sample approximation,
+For real data, we have only estimates of the true underlying distributions $P_X$ and $P_Y$, so $T_X$ and $T_Y$ cannot be directly computed. Furthermore, a reference measure $R$ must still be chosen. The authors choose $R = R_n \star K_h$, i.e. the kernel density estimate with bandwidth $h$ and discrete weights, $R_n := 1/n \sum_{i=1}^m n_i \tilde{P}_i$. Then the authors use the finite sample approximation,
 \begin{equation}
 W_\dagger^2(\tilde{P}_X, \tilde{P}_Y) \approx \frac{1}{m} \sum\limits_{i=1}^m (T_X(u_i) - T_Y(u_i))^2
 \end{equation}
@@ -426,20 +397,19 @@ for a random draw of $u_1, ..., u_m \sim R$.
 \label{fig:synthetic_exp}
 \end{figure}
 
-\subsection{Estimating $T_X$ and $T_Y$}
-Since the distributions of $\tilde{X}$ and $\tilde{Y}$ are not known in practice, $T_X$ and $T_Y$, the optimal transport maps to the reference distribution $R$ are not known. The following estimation procedure is recommended: Sample $X_1, ..., X_m \sim \tilde{P}_X$ and $R_1, ..., R_m \sim R$. Then find the optimal transport map, $\hat{T}_X$ from $\{X_i\}_{i=1}^m$ to $\{R_i\}_{i=1}^m$. For points outside of $\{X_i\}_{i=1}^m$, let $T_X$ map to the output of the 1-nearest neighbor.
+As mentioned abov e, $T_X$ and $T_Y$ are not known and thus must be estimated. The following estimation procedure is recommended: Sample $X_1, ..., X_m \sim \tilde{P}_X$ and $R_1, ..., R_m \sim R$. Then find the optimal transport map, $\hat{T}_X$ from $\{X_i\}_{i=1}^m$ to $\{R_i\}_{i=1}^m$. For points outside of $\{X_i\}_{i=1}^m$, let $T_X$ map to the output of the 1-nearest neighbor.
 
 \subsection{Complete Hybrid Wasserstein Distance}
 Combining the results above with the closed form expression for the Wasserstein distance between two Gaussians, we get the complete expression for the sample hybrid Wasserstein distance:
 \begin{equation}
-\hat{H}^2(P_X, P_Y) = \| \hat{\mu}_X - \hat{\mu}_Y\|^2 + B^2(\hat{\Sigma}_X, \hat{\Sigma}_Y) + \frac{1}{m} \sum\limits_{i=1}^m (\hat{T}_X(u_i) - \hat{T}_Y(u_i))^2
+\hat{H}^2(P_X, P_Y) = \| \hat{\mu}_X - \hat{\mu}_Y\|^2 + \mbox{tr}(\hat{\Sigma}_X) + \mbox{tr}(\hat{\Sigma}_Y) - 2\mbox{tr}((\hat{\Sigma}_X^{1/2} \hat{\Sigma}_Y \hat{\Sigma}_X^{1/2})^{1/2}) + \frac{1}{m} \sum\limits_{i=1}^m (\hat{T}_X(u_i) - \hat{T}_Y(u_i))^2
 \end{equation}
 
 
 \section{Experiments}\label{sec:experiments}
 In this section, we perform two experiments to illustrate the utility of the hybrid wasserstein distance \footnote{Code can be found at \url{https://github.com/oconnor-kevin/clustering-with-ot}}.
 \subsection{Synthetic Data}
-First we apply the $H$ distance to a sample of Gaussian distributions in $\mathbb{R}^2$. $10$ means $\mu_1, ..., \mu_{10} \sim \mbox{Unif}[(-10, 10)^2]$ and $100$ points $x_{k,1}, ..., x_{k,100} \sim \mathcal{N}(\mu_k, \mathbf{I})$ for each $k = 1, ..., 10$ were generated and are depicted in Figure \ref{fig:synthetic_exp_1}. We then computed the $H$ distance between each pair of empirical distributions, $P_k$, where $P_k = 1/100  \sum_{i=1}^{100} \delta_{x_{k, i}}$, to obtain a matrix of pairwise $H$ distances. To visualize distances in this embedded space, we apply multi-dimensional scaling to obtain Figure \ref{fig:synthetic_exp_2}.  Note that the MDS plot mostly captures the relative centers of each distribution. This is to be expected as the distributions differ only in their means. Furthermore, for Gaussian distributions, $H$ distance reduces to Wasserstein distance which is simply the Euclidean distance between the means for distributions with equal covariance.
+First we apply the $H$-distance to a sample of Gaussian distributions in $\mathbb{R}^2$. $10$ means $\mu_1, ..., \mu_{10} \sim \mbox{Unif}[(-10, 10)^2]$ and $100$ points $x_{k,1}, ..., x_{k,100} \sim \mathcal{N}(\mu_k, \mathbf{I})$ for each $k = 1, ..., 10$ were generated and are depicted in Figure \ref{fig:synthetic_exp_1}. We then computed the $H$ distance between each pair of empirical distributions, $P_k$, where $P_k = 1/100  \sum_{i=1}^{100} \delta_{x_{k, i}}$, to obtain a matrix of pairwise $H$ distances. To visualize distances in this embedded space, we apply multi-dimensional scaling to obtain Figure \ref{fig:synthetic_exp_2}.  Note that the MDS plot mostly captures the relative centers of each distribution. This is to be expected as the true underlying distributions differ only in their means. Furthermore, for Gaussian distributions, $H$-distance reduces to the $W_2$ distance which is simply the Euclidean distance between the means for distributions with equal covariance.
 
 \subsection{NBA Playoff Data}
 
@@ -451,14 +421,14 @@ First we apply the $H$ distance to a sample of Gaussian distributions in $\mathb
 \end{figure}
 
 
-To investigate the effect of Hybrid Wasserstein distance on real data, we considered the distribution of made shots in the 2018 NBA playoffs \footnote{https://www.kaggle.com/boonpalipatana/nba-playoff-shots-2018}. This data contains the details of each shot taken by players in the 2018 NBA playoffs including coordinates of their shot and whether it went in or not. We can think of each player's made shots as comprising a distribution that we hope characterizes some aspect of their shooting style. We can then apply the Hybrid Wasserstein distance to compare players and use MDS to visualize the embedded space as above.
+To investigate the effect of Hybrid Wasserstein distance on real data, we considered the distribution of made shots in the 2018 NBA playoffs \footnote{https://www.kaggle.com/boonpalipatana/nba-playoff-shots-2018}. This data contains the details of each shot taken by players in the 2018 NBA playoffs including coordinates of the shot and whether it went in or not. We can think of each player's made shots as comprising a distribution of court positions that we hope characterizes some aspect of their shooting style. We can then apply the Hybrid Wasserstein distance to compare players and use MDS to visualize the embedded space as above.
 
 In order to make the data more digestible, we subset to players with more than 150 made shots in this dataset. The Hybrid Wasserstein distance matrix was computed between each player and used as input for MDS as above. The results are included in Figure \ref{fig:nba}. 
 
 \section{Conclusion and Discussion}\label{sec:discussion}
-We have seen how optimal transport defines a distance between distributions through the expectation of some ground metric. Furthermore, we have shown how to define a more efficient hybrid wasserstein distance. Using this distance, showed how distances between Gaussian data with equal covariances largely depend on the respective means. Finally, we demonstrated how one can measure distances between shot distributions of basketball players and use MDS to visualize the relationships between each.
+We have seen how optimal transport defines a distance between distributions through the expectation of some ground metric. Furthermore, we have shown how to define a more efficient hybrid Wasserstein distance. Using this distance, we observed that distances between Gaussian data with equal covariances largely depend on the respective means. Finally, we demonstrated how one can measure distances between shot distributions of basketball players and use MDS to visualize the relationships between each.
 
-There are many open questions regarding wasserstein-based clustering methods. For example, what happens to wasserstein-based clustering methods in high dimensions? In the case of the hybrid wasserstein distance, we expect that $\hat{\Sigma}$ will be a poor estimate of $\Sigma$ in this case. It would be interesting to consider how this may affect clustering methods which use this method. More generally, one could study what kinds of pathologies for distributions might cause outliers in wasserstein-based distances and clustering. Could one construct more robust distances? For example, one could use medians instead of means. Finally, what are the asymptotic distributional properties of the hybrid wasserstein distance? Few results exist in this area for wasserstein distance without Gaussian assumptions on the two distributions in question. One might try to find special cases where something can be said for the hybrid distance too.
+There are many open questions regarding Wasserstein-based clustering methods. For example, what happens to Wasserstein-based clustering methods in high dimensions? In the case of the Hybrid Wasserstein distance, we expect that $\hat{\Sigma}$ will be a poor estimate of $\Sigma$ for high-dimensional data. It would be interesting to consider how this may affect clustering methods which leverage the $H$-distance. More generally, one could study what kinds of pathologies for distributions might cause outliers in Wasserstein-based distances and clustering. Then one may construct more robust distances with these pathologies in mind. A simple modification might be to use medians instead of means. Finally, what are the asymptotic distributional properties of the hybrid Wasserstein distance? Few results exist in this area for $W_2$ distance without Gaussian assumptions on the two distributions in question. One might try to find special cases where something can be said for the hybrid distance too.
 
 
 \bibliographystyle{plain}
